@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import numpy as np
 from graph import *
-
+from tools import myprofiler
 
 class Node(ABC):
     def __init__(self):
@@ -59,8 +59,7 @@ class Gate(Node):
             dz = 1.0
 
         for node, grad in zip(self._input_nodes, self._local_grads):
-            if isinstance(node, Gate) or isinstance(node, Parameter):
-                node._cumulative_consumers_grad += (dz * grad)
+            node._cumulative_consumers_grad += (dz * grad)
 
 class MulGate(Gate):
 
@@ -74,6 +73,23 @@ class MulGate(Gate):
     def _compute_local_grads(self):
         num = [float(x) for x in self._input_nodes]
         self._local_grads = [np.prod(num[:i] + num[i + 1:]) for i in range(len(num))]
+
+class MulGateAB(Gate):
+    """
+    Mul gate with 2 input values
+    """
+
+    def __init__(self, a, b):
+        Gate.__init__(self, [a, b])
+        self.value = None
+        self.a = a
+        self.b = b
+
+    def forward(self):
+        self.value = float(self.a) * float(self.b)
+
+    def _compute_local_grads(self):
+        self._local_grads = [float(self.b), float(self.a)]
 
 class AddGate(Gate):
 
@@ -100,15 +116,34 @@ class Relu(Gate):
     def _compute_local_grads(self):
         self._local_grads = [float(float(self.__x) > 0.0)]
 
+class Sigmoid(Gate):
+
+    def __init__(self, x):
+        Gate.__init__(self, [x])
+        self.__x = x
+        self.value = None
+
+    def forward(self):
+        exp = np.exp(float(self.__x))
+        self.value = exp/(1.0 + exp)
+
+    def _compute_local_grads(self):
+        self._local_grads = [self.value*(1-self.value)]
+
 class MSE(Gate):
 
     def __init__(self, y_hat=[], y=[]):
         Gate.__init__(self, y_hat)
-        self._y_hat = y_hat
-        self._y = y
+        self.y_hat = y_hat
+        self.y = y
 
     def forward(self):
-        self.value = sum([(float(y_hat_i) - float(y_i))**2 for y_hat_i, y_i in zip(self._y_hat, self._y)])
+        self.difference = np.array([float(t) for t in self.y_hat]) - np.array([float(t) for t in self.y])
+        self.value = np.sum(self.difference**2) / len(self.difference)
 
     def _compute_local_grads(self):
-        self._local_grads = [2 * (float(y_hat_i) - float(y_i)) for y_hat_i, y_i in zip(self._y_hat, self._y)]
+        self._local_grads = 2 * self.difference
+
+    def __call__(self, y_hat, y):
+        self.y_hat = y_hat
+        self.y = y
