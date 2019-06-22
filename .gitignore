@@ -1,7 +1,5 @@
 /__pycache__
-/trash
-/.ipynb_checkpoints
 /tools/__pycache__
-/new
-debugging.ipynb
-removeme.py
+/graph/__pycache__
+/model/__pycache__
+/trash

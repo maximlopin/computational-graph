@@ -1,6 +1,3 @@
-import time
-from tools import myprofiler
-
 class Graph:
     def __init__(self):
         self.gates = []
@@ -27,5 +24,17 @@ class Graph:
         for node in self.placeholders:
             node._local_grads = None
             node._cumulative_consumers_grad = 0.0
+
+    def topologically_sorted(node):
+
+        result = []
+
+        def expand(node):
+            for n in node.input_nodes:
+                expand(n)
+                result.append(n)
+        expand(node)
+
+        return result
 
 default_graph = Graph()

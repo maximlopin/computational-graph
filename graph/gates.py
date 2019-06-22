@@ -1,34 +1,8 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 import numpy as np
-from graph import *
-from tools import myprofiler
 
-class Node(ABC):
-    def __init__(self):
-        self._has_consumers = False
-        self._cumulative_consumers_grad = 0.0
-
-    def __repr__(self):
-        return '{}({}, {})'.format(
-            self.__class__.__name__,
-            self.value,
-            self._cumulative_consumers_grad
-        )
-
-    def __float__(self):
-        return float(self.value)
-
-class Placeholder(Node):
-    def __init__(self, value=None):
-        Node.__init__(self)
-        default_graph.placeholders.append(self)
-        self.value = value
-
-class Parameter(Node):
-    def __init__(self, value=None):
-        Node.__init__(self)
-        default_graph.parameters.append(self)
-        self.value = value
+from .nodes import Node
+from graph.graph import default_graph
 
 class Gate(Node):
     def __init__(self, input_nodes):
@@ -41,6 +15,10 @@ class Gate(Node):
 
         self._local_grads = None
         self._cumulative_consumers_grad = 0.0
+
+    @property
+    def input_floats(self):
+        return [float(x) for x in self._input_nodes]
 
     @abstractmethod
     def forward(self):
@@ -68,10 +46,11 @@ class MulGate(Gate):
         self.value = None
 
     def forward(self):
-        self.value = np.prod([float(x) for x in self._input_nodes])
+        self.input_floats_cached = self.input_floats
+        self.value = np.prod(self.input_floats_cached)
 
     def _compute_local_grads(self):
-        num = [float(x) for x in self._input_nodes]
+        num = self.input_floats_cached
         self._local_grads = [np.prod(num[:i] + num[i + 1:]) for i in range(len(num))]
 
 class MulGateAB(Gate):
@@ -98,7 +77,7 @@ class AddGate(Gate):
         self.value = None
 
     def forward(self):
-        self.value = np.sum([float(x) for x in self._input_nodes])
+        self.value = sum(float(x) for x in self._input_nodes)
 
     def _compute_local_grads(self):
         self._local_grads = np.ones(len(self._input_nodes))
@@ -124,26 +103,26 @@ class Sigmoid(Gate):
         self.value = None
 
     def forward(self):
-        exp = np.exp(float(self.__x))
-        self.value = exp/(1.0 + exp)
+        self.value = 1.0 / (1.0 + np.exp(-1.0 * float(self.__x)))
 
     def _compute_local_grads(self):
         self._local_grads = [self.value*(1-self.value)]
 
-class MSE(Gate):
+class Logp(Gate):
+    """
+    Forward computes softmax(x_vector)
+    Gradient is computed of log(softmax)
+    """
 
-    def __init__(self, y_hat=[], y=[]):
-        Gate.__init__(self, y_hat)
-        self.y_hat = y_hat
-        self.y = y
+    def __init__(self, x_vector):
+        Gate.__init__(self, x_vector)
 
-    def forward(self):
-        self.difference = np.array([float(t) for t in self.y_hat]) - np.array([float(t) for t in self.y])
-        self.value = np.sum(self.difference**2) / len(self.difference)
+        self.x_vector = x_vector
 
     def _compute_local_grads(self):
-        self._local_grads = 2 * self.difference
+        self._local_grads = (1.0 - self.value)
 
-    def __call__(self, y_hat, y):
-        self.y_hat = y_hat
-        self.y = y
+    def forward(self):
+        numerical_x = np.array([float(x) for x in self.x_vector])
+        exp_x = np.exp(numerical_x)
+        self.value = (exp_x - np.max(numerical_x)) / exp_x.sum()

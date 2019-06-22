@@ -1,4 +1,8 @@
-from graph_nodes import *
+
+from graph.graph import default_graph
+from graph.nodes import Parameter
+from graph.gates import AddGate
+from graph.gates import MulGate
 
 a = Parameter(3)
 b = Parameter(4)

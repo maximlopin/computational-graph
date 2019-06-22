@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from graph import default_graph
+from graph.graph import default_graph
 
 
 class Optimizer(ABC):
@@ -19,17 +19,3 @@ class SGD(Optimizer):
 
         for node in default_graph.parameters:
             node.value -= (node._cumulative_consumers_grad * self._lr)
-
-
-class Momentum(Optimizer):
-    def __init__(self, lr):
-        Optimizer.__init__(self, lr)
-        self._v = 0.0
-        self._mu = 0.99
-
-    def optimize(self, error):
-        error.backward()
-
-        for param in default_graph.parameters:
-            self._v = (self._mu * self._v) - (param.grad * self._lr)
-            param.value += self._v
