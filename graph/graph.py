@@ -1,4 +1,5 @@
 from .gates import Gate
+from .nodes import Parameter
 
 class Graph:
     def __init__(self):
@@ -45,7 +46,7 @@ class Graph:
         for n in reversed(self.topologically_sorted(node)):
             if isinstance(n, Gate):
                 n.backward()
-            else:
+            elif isinstance(n, Parameter):
                 yield n
 
 default_graph = Graph()
