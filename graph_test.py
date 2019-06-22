@@ -10,8 +10,7 @@ c = Parameter(5)
 product = MulGate([a, b, c])
 y = AddGate([product, c])
 
-default_graph.execute()
-default_graph.compute_grads()
+default_graph.compute(y)
+default_graph.compute_grads_of(y)
 
-print(default_graph.gates)
-print(default_graph.parameters)
+print(a, b, c, product, y)

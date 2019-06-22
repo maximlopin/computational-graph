@@ -6,16 +6,13 @@ from model.layers import Layer
 from model.loss_functions import MSE
 from model.optimizers import SGD
 
-
 # model = ClassificationModel([
 #     Layer(28*28, 10, Sigmoid)
 # ], MSE, SGD, lr=0.01)
 
-
 model = ClassificationModel([
     Layer(28*28, 10, Relu)
 ], MSE, SGD, lr=0.0001)
-
 
 import mnist
 

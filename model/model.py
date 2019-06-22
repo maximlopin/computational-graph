@@ -82,3 +82,4 @@ class ClassificationModel(Model):
                     self.cost_f.value,
                     correct/(total+1)
                 ), end='\r')
+        print()
