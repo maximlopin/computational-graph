@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
 import numpy as np
-from .graph import default_graph
 
 class Node(ABC):
     def __init__(self):
         self._has_consumers = False
+
+        # Sum of partial derivatives of each consumer-gate
+        # with respect to this node
         self._cumulative_consumers_grad = 0.0
 
     def __repr__(self):
@@ -20,11 +22,9 @@ class Node(ABC):
 class Placeholder(Node):
     def __init__(self, value=None):
         Node.__init__(self)
-        default_graph.placeholders.append(self)
         self.value = value
 
 class Parameter(Node):
     def __init__(self, value=None):
         Node.__init__(self)
-        default_graph.parameters.append(self)
         self.value = value

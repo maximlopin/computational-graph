@@ -2,19 +2,16 @@ from abc import abstractmethod
 import numpy as np
 
 from .nodes import Node
-from graph.graph import default_graph
 
 class Gate(Node):
     def __init__(self, input_nodes):
         Node.__init__(self)
-        default_graph.gates.append(self)
 
         self._input_nodes = input_nodes
         for node in self._input_nodes:
             node._has_consumers = True
 
         self._local_grads = None
-        self._cumulative_consumers_grad = 0.0
 
     @property
     def input_floats(self):
@@ -30,6 +27,12 @@ class Gate(Node):
 
     def backward(self):
         self._compute_local_grads()
+        self.distribute_grads()
+
+    def distribute_grads(self):
+        """
+        Distributes grads to input nodes (dself/dx_i * upper_level_grad)
+        """
 
         if self._has_consumers:
             dz = self._cumulative_consumers_grad

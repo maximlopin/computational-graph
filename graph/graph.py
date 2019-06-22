@@ -1,40 +1,51 @@
+from .gates import Gate
+
 class Graph:
     def __init__(self):
-        self.gates = []
-        self.parameters = []
-        self.placeholders = []
+        self._topologically_sorted_cached = [None]
 
-    def execute(self):
-        for gate in self.gates:
-            gate.forward()
+    def topologically_sorted(self, node):
 
-    def compute_grads(self):
-        for gate in reversed(self.gates):
-            gate.backward()
-
-    def nullify_grads(self):
-        for node in self.parameters:
-            node._local_grads = None
-            node._cumulative_consumers_grad = 0.0
-
-        for node in self.gates:
-            node._local_grads = None
-            node._cumulative_consumers_grad = 0.0
-
-        for node in self.placeholders:
-            node._local_grads = None
-            node._cumulative_consumers_grad = 0.0
-
-    def topologically_sorted(node):
+        if self._topologically_sorted_cached[-1] == node:
+            return self._topologically_sorted_cached
 
         result = []
 
         def expand(node):
-            for n in node.input_nodes:
-                expand(n)
-                result.append(n)
+            if isinstance(node, Gate):
+                for n in node._input_nodes:
+                    expand(n)
+
+            if node not in result:
+                result.append(node)
+
+
         expand(node)
 
+        self._topologically_sorted_cached = result
+
         return result
+
+    def nullify_grads(self):
+        for node in self._topologically_sorted_cached:
+            node._cumulative_consumers_grad = 0.0
+
+    def compute(self, node):
+
+        for node in self.topologically_sorted(node):
+            if isinstance(node, Gate):
+                node.forward()
+
+    def compute_grads_of(self, node):
+        """
+        Computes grads of each node, that contributes to this node
+        Yields each parameter of current function/node
+        """
+
+        for n in reversed(self.topologically_sorted(node)):
+            if isinstance(n, Gate):
+                n.backward()
+            else:
+                yield n
 
 default_graph = Graph()

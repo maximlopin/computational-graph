@@ -30,9 +30,10 @@ class Model(ABC):
             p.value = x
 
     def forward(self, x):
+
         self.set_input(x)
 
-        default_graph.execute()
+        default_graph.compute(self.cost_f)
 
         return self.layers[-1].a
 
@@ -54,7 +55,7 @@ class ClassificationModel(Model):
             y=[None for _ in range(self.layers[-1].out_s)]
         )
 
-        self.optimizer = optimizer(lr)
+        self.optimizer = optimizer(lr, self.cost_f)
 
     def fit(self, x_train, y_train, epochs=15):
         total = 0
@@ -72,7 +73,7 @@ class ClassificationModel(Model):
                 correct += (np.argmax([float(a) for a in self.layers[-1].a]) == np.argmax(y))
 
                 default_graph.nullify_grads()
-                default_graph.compute_grads()
+                default_graph.compute_grads_of(self.cost_f)
                 self.optimizer.optimize()
 
                 print('Epoch {}/{}. Error: {:3f}. Accuracy: {:3f}'.format(
