@@ -44,3 +44,17 @@ class Momentum(SGD):
             parameter.v = (parameter.v * self._mu) - (dx * self._lr)
 
             parameter.value += parameter.v
+
+class NAG(Momentum):
+    def __init__(self, lr, fn, mu=0.80):
+        Momentum.__init__(self, lr, fn, mu)
+
+    def optimize(self):
+        for parameter in default_graph.compute_grads_of(self._fn):
+
+            dx = parameter._cumulative_consumers_grad
+
+            v_prev = parameter.v
+            parameter.v = self._mu * parameter.v - self._lr * dx
+
+            parameter.value += -1.0 * self._mu * v_prev + (1.0 + self._mu) * parameter.v

@@ -4,15 +4,11 @@ from graph.gates import Sigmoid, Relu
 from model.model import ClassificationModel
 from model.layers import Layer
 from model.loss_functions import MSE
-from model.optimizers import SGD, Momentum
-
-# model = ClassificationModel([
-#     Layer(28*28, 10, Sigmoid)
-# ], MSE, SGD, lr=0.01)
+from model.optimizers import NAG
 
 model = ClassificationModel([
     Layer(28*28, 10, Relu)
-], MSE, Momentum, lr=0.0001)
+], MSE, NAG, lr=0.0001)
 
 import mnist
 
